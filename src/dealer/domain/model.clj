@@ -1,36 +1,14 @@
-(ns dealer.domain.model)
+(ns dealer.domain.model
+  (:require
+   [dealer.domain.referee :as referee]
+   [dealer.games.bridge.bridge :as bridge]))
 
-(defn if-valid-proceed
-  ""
-  [check-fn next-fn game action]
-  (let [validity (check-fn game action)]
-    (if (:valid validity)
-      (next-fn game action)
-      validity)))
+(def running-game (atom {}))
 
-(defn player-constraints-fulfilled?
-  "Check if action is in set of permitted actions for the player at this time"
-  [game action]
-  ;; check player overriding constraints else check step constraints
-  {:valid true :reason nil})
-
-(defn action-constraints-fulfilled?
-  "Check if constraints for the action itself are fulfilled"
-  [game action]
-  {:valid true :reason nil})
-
-(def is-action-valid?
-  "Check constraints to determine if action is valid"
-  (partial if-valid-proceed player-constraints-fulfilled? action-constraints-fulfilled?))
-
-(defn execute-action
-  "Execute a valid action and return the updated game state"
-  [game action]
+(defn- set-game
+  [game]
+  (swap! running-game (fn [atom game] game) game)
   game)
-
-(def process-action
-  "Execute an action if it is valid else return the reason it is not"
-  (partial if-valid-proceed is-action-valid? execute-action))
 
 (defn- logged-game
   [game]
@@ -40,11 +18,22 @@
 (defn new-game
   "Create a new game"
   [game-type opts]
-  (logged-game (case game-type
-                 nil)))
+  (-> game-type
+      (case
+          :bridge (bridge/new-bridge-game opts)
+          nil)
+      logged-game
+      set-game))
 
+(defn update-game
+  "Update game if action was valid"
+  [updated-game-or-failed-validity]
+  (if (= (:valid updated-game-or-failed-validity) false)
+    updated-game-or-failed-validity
+    (set-game updated-game-or-failed-validity)))
 
-;; change-zone card-instance-id prev-zone next-zone
-;; card exists in the prev-zone
-;; get cord and zone constraints by the move zones
-
+(defn process-command
+  [command args]
+  (case command
+    "new-game" (new-game (first args) {:players (second args)})
+    "do-action" (update-game (referee/process-action @running-game args))))
