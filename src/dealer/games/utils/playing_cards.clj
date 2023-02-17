@@ -1,4 +1,5 @@
-(ns dealer.games.utils.playing-cards)
+(ns dealer.games.utils.playing-cards
+  (:require [dealer.utils.utils :as utils]))
 
 (def ranks
   (let [numbers (mapv str (range 2 11))
@@ -9,7 +10,9 @@
 
 (def cards
   (->> (utils/cartesian-product ranks suits)
-         (map (fn [[rank suit]] {:rank rank :suit suit}))))
+         (map (fn [[rank suit]] {:instance-id (utils/uuid)
+                                :rank rank
+                                :suit suit}))))
 
 (defn shuffled-cards
   []
@@ -25,4 +28,4 @@
   [cards]
   (->> cards
        (sort-by #(.indexOf ranks (:rank %)))
-       first))
+       last))

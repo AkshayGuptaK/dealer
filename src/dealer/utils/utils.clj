@@ -1,4 +1,5 @@
-(ns dealer.utils.utils)
+(ns dealer.utils.utils
+  (:import java.util.UUID))
 
 (defn cartesian-product [& seqs]
   (reduce
@@ -7,3 +8,7 @@
         (conj x y)))
     [[]]
     seqs))
+
+(defn uuid
+  []
+  (.toString (UUID/randomUUID)))
